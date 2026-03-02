@@ -6,36 +6,48 @@
 class Ball {
     public:
     float x, y;
-    float speed, xSpeed,ySpeed;
+    float speed, gravity, xSpeed,ySpeed;
     int radius;
+    bool touchingGround;
 
     void draw()
     {
         DrawCircle(x,y,radius,WHITE);
     }
-    void direction() {
-        if (IsKeyPressed(KEY_UP) && ySpeed==0) {
-            xSpeed = 0;
-            ySpeed = -speed;
+    void isTouchingGround() {
+        if (y > 800 - radius-1){
+            ySpeed=0;
+            touchingGround = true;
         }
-
-        else if (IsKeyPressed(KEY_DOWN) && ySpeed==0) {
-            xSpeed = 0;
-            ySpeed = speed;
-        }
-
-        else if (IsKeyPressed(KEY_LEFT) && xSpeed==0) {
-            xSpeed = -speed;
-            ySpeed = 0;
-        }
-
-        else if (IsKeyPressed(KEY_RIGHT) && xSpeed==0) {
-            xSpeed = speed;
-            ySpeed = 0;
+        else {
+            ySpeed=gravity;
+            touchingGround = false;
         }
 
     }
 
+    void jump() {
+        if (IsKeyDown(KEY_UP)==true) {
+            ySpeed=-speed;
+        }
+    }
+
+    void teleport(){
+        if (x<0) {
+            x=1200;
+        }
+        else if (x>1200) {
+            x=0;
+
+        }
+        if (y<0) {
+            y=800;
+        }
+
+        else if (y>800) {
+            y=0;
+        }
+    };
     void update() {
         x += xSpeed;
         y += ySpeed;
@@ -53,6 +65,8 @@ int main() {
     ball.x= screenWidth/2;
     ball.y= screenHeight/2;
     ball.speed=7;
+    ball.gravity=7
+    ;
 
 
     Color green {20,169,133,255};
@@ -66,7 +80,10 @@ int main() {
     while (WindowShouldClose() == false) {
 
         //event handling
-            ball.direction();
+
+        ball.teleport();
+        ball.isTouchingGround();
+        ball.jump();
         //updating positions
 
             ball.update();
