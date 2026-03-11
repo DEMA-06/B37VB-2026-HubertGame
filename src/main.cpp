@@ -1,78 +1,55 @@
 //
 // Created by h on 26/02/2026.
 //
+#include <iostream>
+#include <ostream>
 #include <raylib.h>
 
-class Ball {
+using namespace std;
+
+// initialise colour presets
+Color green = {173,204,96,255};
+Color darkGreen = {43, 51, 24, 255};
+Color blue = {43,22,133,255};
+Color white = {255,255,255,255};
+Color red = {190,30,40,255};
+
+// defining size of window grid in which the game will operate.
+int cellSize = 40;
+int cellCount = 10;
+
+class player {
     public:
-    float x, y;
-    float speed, gravity, xSpeed,ySpeed;
-    int radius;
-    bool touchingGround;
+    Vector2 position = {5,6};
 
-    void draw()
+    void Draw()
     {
-        DrawCircle(x,y,radius,WHITE);
-    }
-    void isTouchingGround() {
-        if (y > 800 - radius-1){
-            ySpeed=0;
-            touchingGround = true;
-        }
-        else {
-            ySpeed=gravity;
-            touchingGround = false;
-        }
-
-    }
-
-    void jump() {
-        if (IsKeyDown(KEY_UP)==true) {
-            ySpeed=-speed;
-        }
-    }
-
-    void teleport(){
-        if (x<0) {
-            x=1200;
-        }
-        else if (x>1200) {
-            x=0;
-
-        }
-        if (y<0) {
-            y=800;
-        }
-
-        else if (y>800) {
-            y=0;
-        }
+        DrawCircle(position.x*cellSize, position.y*cellSize, cellSize/2, white);
     };
-    void update() {
-        x += xSpeed;
-        y += ySpeed;
-    }
+
+};
+class node {
+    public:
+    struct Direction {
+        int x;
+        int y;
+    } direction;
+    node(int directionX=0, int directionY=0) : direction{directionX,directionY} {};
 };
 
+class maze {
+    public:
 
-Ball ball;
+};
+
+// call classes
+player player;
+
 
 int main() {
-    //defining the position coordinate values of the ball
-    const int screenWidth = 1200;
-    const int screenHeight = 800;
-    ball.radius = 20;
-    ball.x= screenWidth/2;
-    ball.y= screenHeight/2;
-    ball.speed=7;
-    ball.gravity=7
-    ;
-
-
-    Color green {20,169,133,255};
-
     //opening a window
-    InitWindow(screenWidth,screenHeight,"My First Raylib Game");
+    cout << "initialising game..." << endl;
+    InitWindow(cellSize*cellCount,cellSize*cellCount,"My First Raylib Game");
     SetTargetFPS(69);
 
 
@@ -80,18 +57,13 @@ int main() {
     while (WindowShouldClose() == false) {
 
         //event handling
-
-        ball.teleport();
-        ball.isTouchingGround();
-        ball.jump();
         //updating positions
-
-            ball.update();
 
         //drawing updates
     BeginDrawing();
-        ball.draw();
-        ClearBackground(green);
+
+        player.Draw();
+        ClearBackground(blue);
 
     EndDrawing();
 
