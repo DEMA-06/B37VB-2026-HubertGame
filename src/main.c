@@ -1,12 +1,15 @@
 //
 // Created by h on 26/02/2026.
 //
-#include <iostream>
-#include <ostream>
 #include <raylib.h>
-#include <vector>
 
-using namespace std;
+#define CELL_SIZE  40
+#define CELL_COUNT 20
+
+#define UP    Vector2 {  0, -1 }
+#define DOWN  Vector2 {  0,  1 }
+#define LEFT  Vector2 { -1,  0 }
+#define RIGHT Vector2 {  1,  0 }
 
 // initialise colour presets
 Color green = {173,204,96,255};
@@ -16,16 +19,9 @@ Color white = {255,255,255,255};
 Color red = {190,30,40,255};
 Color purple = {190,30, 85, 255};
 // defining size of window grid in which the game will operate.
-int cellSize = 40;
-int cellCount = 20;
+
 
 // designing cell cutout shapes
-class cell{
-    void right(int x,int y) {
-        DrawRectangle((x*cellSize+2.5), (y*cellSize)+2.5, cellSize-2.5, cellSize-5, white);
-    }
-};
-
 class player {
     public:
 
@@ -97,28 +93,36 @@ class node {
 
 };
 
-class maze {
-public:
+
+struct Maze {
     int width, height;
-    vector<vector<node>> map;
+    Vector2 map;
     Vector2 origin;
     Vector2 nextOrigin;
-    vector<Vector2> possibleDirections;
+    Vector2 possibleDirections[];
+};
+void InitializeMaze(struct Maze* maze, int width, int height) {
+    maze->width  = width;
+    maze->height = height;
+    maze->origin = Vector2{(float)(width - 1) ,(float)(height - 1)};
+    maze->nextOrigin = Vector2{0,0};
 
-    maze(int width, int height):
-        width(width),
-        height(height),
-        origin(Vector2{(float)(width - 1) , (float)(height - 1)}),
-        nextOrigin(Vector2{0,0}){
-        possibleDirections = {
-            {-1,0},
-            {0, -1},
-            {1, 0},
-            {0, 1}
-        };
-        map = newMap(width, height);
+    //    map = newMap(width, height);
+
+    for (int x=0; x<width; x++) {
+        (maze->map).push_back(vector<node>());
+        for (int y=0; y<(height-1); y++) {
+            map[x].push_back(node(x, y, 1, 0));
+        }
+        map[x].push_back(node(x, height-1, 0, 1));
     }
+    map[height-1][width-1].setDirection(0,0);
+    return map;
 
+}
+
+class maze {
+public:
     // initialise a perfect maze for the algorithm to base off of
     vector<vector<node>> newMap(int width, int height) {
         for (int x=0; x<width; x++) {
@@ -159,11 +163,8 @@ player player;
 maze maze(cellCount, cellCount);
 bool wasMazeInitialised = false;
 
-
-
 int main() {
     //opening a window
-    cout << "initialising game..\nglhf" << endl;
     InitWindow(cellSize*cellCount,cellSize*cellCount,"Be aMazed");
     SetTargetFPS(69);
     // initialise default map
@@ -171,24 +172,20 @@ int main() {
 
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
-
         //event handling
         player.Move();
         //updating positions
 
-        // create a function called origin.Shift() that would be cool
+        //TODO: create a function called origin.Shift() that would be cool
 
         //drawing updates
-
-    BeginDrawing();
-
-        maze.drawMap();
-        ClearBackground(BLACK);
-
-    EndDrawing();
-
-
-    };
+        BeginDrawing();
+        {
+            ClearBackground(BLACK);
+            maze.drawMap();
+        }
+        EndDrawing();
+    }
     //window closing for end of game
     CloseWindow();
     return 0;
