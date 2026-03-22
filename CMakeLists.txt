@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
-project(example)
+project(MAZE)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -23,9 +26,8 @@ endif()
 
 # Our Project
 
-add_executable(${PROJECT_NAME} src/core_basic_window.c
-        src/core_basic_window.c
-        src/main.cpp
+add_executable(${PROJECT_NAME}
+        src/main.c
 )
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} raylib)
