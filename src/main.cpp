@@ -5,8 +5,10 @@
 #include <ostream>
 #include <raylib.h>
 #include <vector>
+#include <random>
 
 using namespace std;
+//note - coordinate system setup incorrectly, when calling node coordinates, do it in reverse (i.e [y][x])
 
 // initialise colour presets
 Color green = {173,204,96,255};
@@ -14,7 +16,8 @@ Color darkGreen = {43, 51, 24, 255};
 Color blue = {43,22,133,255};
 Color white = {255,255,255,255};
 Color red = {190,30,40,255};
-Color purple = {190,30, 85, 255};
+Color purple = {170,50, 150, 255};
+
 // defining size of window grid in which the game will operate.
 int cellSize = 40;
 int cellCount = 20;
@@ -32,7 +35,7 @@ class player {
     float playerX, playerY;
     Vector2 position = {1, 1};
 
-    void Move() {
+    void move() {
         if (IsKeyPressed(KEY_RIGHT)) {
             position.x += 2;
         }
@@ -46,7 +49,7 @@ class player {
             position.y += 2;
         }
     }
-    void Draw()
+    void draw()
     {
         DrawCircle(position.x*cellCount, position.y*cellCount, cellSize/3, white);
     };
@@ -55,19 +58,20 @@ class player {
 
 class node {
     public:
+    int posX, posY;
     struct Direction {
         int x, y;
     } direction;
 
-    node(int posX, int posY, int directionX=0, int directionY=0) : direction{directionX,directionY} {}
+    node(int posX, int posY, int directionX=0, int directionY=0) : posX(posX), posY(posY), direction{directionX,directionY} {}
 
     void setDirection(int newDirX, int newDirY) {
         direction.x = newDirX;
         direction.y = newDirY;
     }
-    // node drawing function for debugging
-    void Draw(int posX, int posY) {
 
+    // node drawing function for debugging
+    void draw() {
 
         if (direction.x == 0) {
             if (direction.y == -1) {
@@ -86,8 +90,7 @@ class node {
                 DrawCircle((cellSize*posX)+cellSize/2, (cellSize*posY)+cellSize/2, cellSize/3, white);
             }
             else if (direction.x == 1) {
-                //right-facing node
-                cell.right();
+                DrawCircle((cellSize*posX)+cellSize/2, (cellSize*posY)+cellSize/2, cellSize/3, darkGreen);
             }
         }
         else if (direction.x == 0 & direction.y == 0) {
@@ -104,6 +107,9 @@ public:
     Vector2 origin;
     Vector2 nextOrigin;
     vector<Vector2> possibleDirections;
+    // implement a random generation function
+    mt19937 rng{random_device{}()};
+    uniform_int_distribution<int> directionDist{0,3};
 
     maze(int width, int height):
         width(width),
@@ -121,14 +127,15 @@ public:
 
     // initialise a perfect maze for the algorithm to base off of
     vector<vector<node>> newMap(int width, int height) {
-        for (int x=0; x<width; x++) {
+        for (int y=0; y<width; y++) {
             map.push_back(vector<node>());
-            for (int y=0; y<(height-1); y++) {
-                map[x].push_back(node(x, y, 1, 0));
+            for (int x=0; x<(height-1); x++) {
+                map[y].push_back(node(x, y, 1, 0));
             }
-            map[x].push_back(node(x, height-1, 0, 1));
+            map[y].push_back(node(width-1, y, 0, 1));
         }
         map[height-1][width-1].setDirection(0,0);
+        setOrigin(width-1,height-1);
         return map;
     }
 
@@ -142,14 +149,34 @@ public:
         nextOrigin.y = y;
     }
 
+    //outputting origin values for debugging -- will delete later, or set it to toggle
+    void stateOrigin() {
+        cout << origin.x << " " << origin.y << endl;
+    }
+
     void drawMap() {
         //drawing nodes for debugging
-
-        for (int x=0; x<width; x++) {
-            for (int y=0; y<height; y++) {
-                map[y][x].Draw(x,y);
+                for (int y=0; y<height; y++) {
+                    for (int x=0; x<width; x++) {
+                        map[x][y].draw();
             }
         }
+    }
+
+    void step() {
+        int randIndex = directionDist(rng);
+        //select random direction and set it as the provisional direction of the origin node
+        Vector2 direction = possibleDirections[randIndex];
+        setNextOrigin(nextOrigin.x + direction.x, nextOrigin.y + direction.y);
+        //ensure direction doesn't point out of bounds
+        if (nextOrigin.x > width || nextOrigin.y> height || nextOrigin.x < 0 || nextOrigin.y < 0) {
+
+        }
+        else {
+            map[origin.x][origin.y].setDirection(direction.x,direction.y);
+        }
+
+
     }
 
 };
@@ -165,7 +192,7 @@ int main() {
     //opening a window
     cout << "initialising game..\nglhf" << endl;
     InitWindow(cellSize*cellCount,cellSize*cellCount,"Be aMazed");
-    SetTargetFPS(69);
+    SetTargetFPS(120);
     // initialise default map
     maze.newMap(cellCount,cellCount);
 
@@ -173,7 +200,9 @@ int main() {
     while (WindowShouldClose() == false) {
 
         //event handling
-        player.Move();
+        player.move();
+        maze.step();
+        maze.stateOrigin();
         //updating positions
 
         // create a function called origin.Shift() that would be cool
