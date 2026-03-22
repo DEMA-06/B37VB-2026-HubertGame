@@ -158,13 +158,16 @@ void Shift(struct Maze* maze){
     SetNextOrigin(maze, (int)(maze->nextOrigin.x + direction.x), (int)(maze->nextOrigin.y + direction.y));
 
     //ensure direction doesn't point out of bounds
-    if (maze->nextOrigin.x > maze->width || maze->nextOrigin.y > maze->height || maze->nextOrigin.x < 0 || maze->nextOrigin.y < 0) {
+    if (((maze->nextOrigin.x + direction.x) > maze->width ||
+         (maze->nextOrigin.y + direction.y) > maze->height ||
+         (maze->nextOrigin.x + direction.x) < 0 ||
+         (maze->nextOrigin.y + direction.y) < 0)) {
 
     }
     else {
         SetNodeDirection(&(maze->map[(int) maze->origin.x][(int) maze->origin.y]), (int) direction.x, (int) direction.y);
         // determine adjacent position
-        // set new origin position and remove it's direction
+        // set new origin position and remove its direction
         SetOrigin(maze, ((int) maze->origin.x+direction.x), ((int) maze->origin.y+direction.y), &(maze->map[(int) maze->origin.x][(int) maze->origin.y]));
     }
 
