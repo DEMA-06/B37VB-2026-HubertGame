@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <raylib.h>
+#include <stdio.h>
 
 #define CELL_SIZE  40
 #define CELL_COUNT 20 // MUST ALWAYS BE EVEN NUMBER!!!!!!!!!!
@@ -17,14 +18,23 @@ Color blue = {43,22,133,255};
 Color white = {255,255,255,255};
 Color red = {190,30,40,255};
 Color purple = {190,30, 85, 255};
-// defining size of window grid in which the game will operate.
-
-// designing cell cutout shapes
 
 struct Player {
     Vector2 position;
 };
+struct Node {
+    Vector2 position;
+    Vector2 direction;
+};
+struct Maze {
+    int width, height;
+    struct Node map[CELL_COUNT][CELL_COUNT];
+    Vector2 origin;
+    Vector2 nextOrigin;
+    Vector2 possibleDirections[];
+};
 
+//Player Functions
 void MovePlayer(struct Player* player) {
     if (IsKeyPressed(KEY_RIGHT)) {
         player->position.x += 2;
@@ -39,30 +49,15 @@ void MovePlayer(struct Player* player) {
         player->position.y += 2;
     }
 };
-
 void DrawPlayer(struct Player* player) {
     DrawCircle(player->position.x*CELL_COUNT, player->position.y*CELL_COUNT, CELL_SIZE, white);
 
 };
-
 void InitializePlayer(struct Player* player) {
     player->position = (Vector2) { 1, 1};
 }
 
-
-struct Node {
-    Vector2 position;
-    Vector2 direction;
-};
-struct Maze {
-    int width, height;
-    struct Node map[CELL_COUNT][CELL_COUNT];
-    Vector2 origin;
-    Vector2 nextOrigin;
-    Vector2 possibleDirections[];
-};
-
-// Node Def
+// Node Functions
 void SetNodeDirection(struct Node* node, int x, int y) {
     node->direction = (Vector2) {(float) x, (float) y};
 }
@@ -103,13 +98,13 @@ void DrawNode(struct Node* node) {
 }
 
 // Maze Functions
-void SetOrigin(struct Maze* maze, int x, int y) {
+void SetOrigin(struct Maze* maze, int x, int y, struct Node* node) {
     maze->origin = (Vector2) {(float) x, (float) y};
+    SetNodeDirection(node, 0, 0 );
 }
 void SetNextOrigin(struct Maze* maze, int x, int y) {
     maze->nextOrigin = (Vector2) {(float) x, (float) y};
 }
-
 void InitializeMaze(struct Maze* maze, int width, int height) {
     maze->width      = width;
     maze->height     = height;
@@ -123,17 +118,59 @@ void InitializeMaze(struct Maze* maze, int width, int height) {
         maze->map[width - 1][y] =
             (struct Node){ .position.x=(float)(width - 1), .position.y= (float) y, .direction.x=0, .direction.y=1 };
     }
-
-    SetNodeDirection(&(maze->map[height-1][width-1]), 0, 0);
-    SetOrigin(maze, width - 1, height - 1);
+    SetOrigin(maze, width - 1, height - 1, &(maze->map[height-1][height-1]));
 }
-
 void DrawMap(struct Maze* maze) {
     for (int y = 0; y < maze->height; y++) {
         for (int x = 0; x < maze->width; x++) {
             DrawNode(&(maze->map[x][y]));
         }
     }
+}
+void Shift(struct Maze* maze){
+    int randIndex = (rand() % 4);
+    Vector2 direction;
+
+    //-> Select random direction and set it as the provisional direction of the origin node
+    switch (randIndex) {
+        case 0: {
+            direction = UP;
+            break;
+        }
+        case 1: {
+            direction = DOWN;
+            break;
+        }
+        case 2: {
+            direction = LEFT;
+            break;
+        }
+        case 3: {
+            direction = RIGHT;
+            break;
+        }
+        default: {
+            direction = UP; // This case should NOT happen. If so, Math broken
+            break;
+        }
+    }
+
+    SetNextOrigin(maze, (int)(maze->nextOrigin.x + direction.x), (int)(maze->nextOrigin.y + direction.y));
+
+    //ensure direction doesn't point out of bounds
+    if (maze->nextOrigin.x > maze->width || maze->nextOrigin.y > maze->height || maze->nextOrigin.x < 0 || maze->nextOrigin.y < 0) {
+
+    }
+    else {
+        SetNodeDirection(&(maze->map[(int) maze->origin.x][(int) maze->origin.y]), (int) direction.x, (int) direction.y);
+        // determine adjacent position
+        // set new origin position and remove it's direction
+        SetOrigin(maze, ((int) maze->origin.x+direction.x), ((int) maze->origin.y+direction.y), &(maze->map[(int) maze->origin.x][(int) maze->origin.y]));
+    }
+
+    //print origin for debug
+    printf("%d ," , (int) maze->origin.x);
+    printf("%d \n" , (int) maze->origin.y);
 }
 
 int main() {
@@ -142,7 +179,7 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(120);
+    SetTargetFPS(69);
 
     // initialise default map
     struct Player player;
@@ -156,51 +193,10 @@ int main() {
         //event handling
         MovePlayer(&player);
 
-        //-> Step
-        {
-            int randIndex = (rand() % 4);
-            Vector2 direction;
-
-            //-> Select random direction and set it as the provisional direction of the origin node
-            switch (randIndex) {
-                case 0: {
-                    direction = UP;
-                    break;
-                }
-                case 1: {
-                    direction = DOWN;
-                    break;
-                }
-                case 2: {
-                    direction = LEFT;
-                    break;
-                }
-                case 3: {
-                    direction = RIGHT;
-                    break;
-                }
-                default: {
-                    direction = UP; // This case should NOT happen. If so, Math broken
-                    break;
-                }
-            }
-
-            SetNextOrigin(&maze, (int)(maze.nextOrigin.x + direction.x), (int)(maze.nextOrigin.y + direction.y));
-
-
-            //ensure direction doesn't point out of bounds
-            if (maze.nextOrigin.x > maze.width || maze.nextOrigin.y > maze.height || maze.nextOrigin.x < 0 || maze.nextOrigin.y < 0) {
-
-            }
-            else {
-                SetNodeDirection(&(maze.map[(int) maze.origin.x][(int) maze.origin.y]), (int) direction.x, (int) direction.y);
-            }
-        }
-
         //updating positions
 
         // create a function called origin.Shift() that would be cool
-
+        Shift(&maze);
         //drawing updates
 
         BeginDrawing();
