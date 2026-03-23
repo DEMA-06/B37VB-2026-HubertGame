@@ -21,6 +21,12 @@ Color purple = {190,30, 85, 255};
 
 struct Player {
     Vector2 position;
+    bool canMoveLeft;
+    bool canMoveRight;
+    bool canMoveUp;
+    bool canMoveDown;
+    int score;
+    int lives;
 };
 struct Node {
     Vector2 position;
@@ -34,28 +40,6 @@ struct Maze {
     Vector2 possibleDirections[];
 };
 
-//Player Functions
-void MovePlayer(struct Player* player) {
-    if (IsKeyPressed(KEY_RIGHT)) {
-        player->position.x += 2;
-    }
-    else if (IsKeyPressed(KEY_LEFT)) {
-        player->position.x -= 2;
-    }
-    else if (IsKeyPressed(KEY_UP)) {
-        player->position.y -= 2;
-    }
-    else if (IsKeyPressed(KEY_DOWN)) {
-        player->position.y += 2;
-    }
-};
-void DrawPlayer(struct Player* player) {
-    DrawCircle(player->position.x*CELL_COUNT, player->position.y*CELL_COUNT, CELL_SIZE/ 3, purple);
-
-};
-void InitializePlayer(struct Player* player) {
-    player->position = (Vector2) { 1, 1};
-}
 
 // Node Functions
 void SetNodeDirection(struct Node* node, int x, int y) {
@@ -65,11 +49,11 @@ void DrawNode(struct Node* node) {
     if (node->direction.x == 0) {
         if (node->direction.y == -1) {
             //upward node
-            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) , CELL_SIZE - 5, CELL_SIZE, white);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) , CELL_SIZE - 5, CELL_SIZE, red);
         }
         else if (node->direction.y == 1) {
             //downward node
-            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE - 5, CELL_SIZE, white);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE - 5, CELL_SIZE, green);
         }
     }
     else if (node->direction.y == 0) {
@@ -77,13 +61,14 @@ void DrawNode(struct Node* node) {
             //left-facing node
             DrawRectangle((CELL_SIZE * node->position.x) - 10 , (CELL_SIZE * node->position.y) + 5, CELL_SIZE + 5, CELL_SIZE - 5, white);
         }
+            //right-facing node
         else if (node->direction.x == 1) {
             DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE + 5, CELL_SIZE - 5, white );
         }
     }
 }
 void DrawOrigin(struct Maze* maze) {
-            DrawRectangle((CELL_SIZE * maze->origin.x) , (CELL_SIZE * maze->origin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, white);
+            DrawRectangle((CELL_SIZE * maze->origin.x) , (CELL_SIZE * maze->origin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, blue);
 
 }
 // Maze Functions
@@ -161,12 +146,92 @@ void Shift(struct Maze* maze){
             }
         }
     }
-
-    //print origin for debug
-    printf("%d ," , (int) maze->origin.x);
-    printf("%d \n" , (int) maze->origin.y);
 }
 
+//Player Functions
+void CheckWalls(struct Maze* maze, struct Player* player) {
+    //check movement right
+    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.x ==  1) ||
+        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == -1)) &&
+        (maze->map[((int)player->position.x + 1)] [(int) player->position.y].direction.x == -1)))
+        {
+        player->canMoveRight = true;
+        }
+    else
+        {
+        player->canMoveRight = false;
+        }
+
+    //check movement left
+    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.x ==  -1) ||
+        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == 1)) &&
+        (maze->map[((int)player->position.x - 1)] [(int) player->position.y].direction.x == 1)))
+    {
+        player->canMoveLeft = true;
+    }
+    else
+    {
+        player->canMoveLeft = false;
+    }
+
+    //check movement up
+    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.y ==  -1) ||
+        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.x != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == 1)) &&
+        (maze->map[((int)player->position.x)] [(((int) player->position.y) - 1)].direction.y == 1)))
+    {
+        player->canMoveUp = true;
+    }
+    else
+    {
+        player->canMoveUp = false;
+    }
+
+    //check movement down
+    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.y ==  1) ||
+        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.x != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == -1)) &&
+        (maze->map[((int)player->position.x)] [((int) player->position.y) + 1].direction.y == -1)))
+    {
+        player->canMoveDown = true;
+    }
+    else
+    {
+        player->canMoveDown = false;
+    }
+};
+void CheckOnOrigin(struct Maze* maze, struct Player* player) {
+    if (player->position.x == maze->origin.x) {
+        if (player->position.y == maze->origin.y);
+        for (int i; i<(CELL_COUNT*CELL_COUNT); i++) {
+            Shift(maze);
+        }
+    }
+};
+void MovePlayer(struct Player* player) {
+    if      (IsKeyPressed(KEY_RIGHT) && player->canMoveRight == true) {
+        player->position.x += 1;
+    }
+    else if (IsKeyPressed(KEY_LEFT)  && player->canMoveLeft  == true) {
+        player->position.x -= 1;
+    }
+    else if (IsKeyPressed(KEY_UP)    && player->canMoveUp    == true) {
+        player->position.y -= 1;
+    }
+    else if (IsKeyPressed(KEY_DOWN)  && player->canMoveDown  == true) {
+        player->position.y += 1;
+    }
+};
+void DrawPlayer(struct Player* player) {
+    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + 20 , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, purple);
+};
+void InitializePlayer(struct Player* player) {
+    player->position = (Vector2) { 0, 0};
+    player->canMoveRight = false;
+    player->canMoveLeft  = false;
+    player->canMoveUp    = false;
+    player->canMoveDown  = false;
+    player->score        = 0;
+    player->lives        = 3;
+}
 
 int main() {
     //-> Init random
@@ -174,7 +239,7 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(120);
+    SetTargetFPS(200);
 
     // initialise default map
     struct Player player;
@@ -189,9 +254,9 @@ int main() {
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
         //event handling
+        CheckOnOrigin(&maze, &player);
+        CheckWalls(&maze, &player);
         MovePlayer(&player);
-
-
         //drawing updates
         BeginDrawing();
             ClearBackground(BLACK);
