@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define CELL_SIZE  40
-#define CELL_COUNT 20 // MUST ALWAYS BE EVEN NUMBER!!!!!!!!!!
+#define CELL_COUNT 20
 
 #define UP    (Vector2) {  0, -1 }
 #define DOWN  (Vector2) {  0,  1 }
@@ -50,7 +50,7 @@ void MovePlayer(struct Player* player) {
     }
 };
 void DrawPlayer(struct Player* player) {
-    DrawCircle(player->position.x*CELL_COUNT, player->position.y*CELL_COUNT, CELL_SIZE, white);
+    DrawCircle(player->position.x*CELL_COUNT, player->position.y*CELL_COUNT, CELL_SIZE/ 3, purple);
 
 };
 void InitializePlayer(struct Player* player) {
@@ -65,38 +65,27 @@ void DrawNode(struct Node* node) {
     if (node->direction.x == 0) {
         if (node->direction.y == -1) {
             //upward node
-            DrawCircle((CELL_SIZE * node->position.x) + CELL_SIZE / 2,
-                (CELL_SIZE * node->position.y) + CELL_SIZE / 2,
-                CELL_SIZE / 3, green
-                );
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) , CELL_SIZE - 5, CELL_SIZE, white);
         }
         else if (node->direction.y == 1) {
             //downward node
-            DrawCircle((CELL_SIZE*node->position.x)+CELL_SIZE/2,
-                (CELL_SIZE*node->position.y)+CELL_SIZE/2,
-                CELL_SIZE/3, red);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE - 5, CELL_SIZE, white);
         }
     }
     else if (node->direction.y == 0) {
         if (node->direction.x == -1) {
             //left-facing node
-            DrawCircle((CELL_SIZE * node->position.x) + CELL_SIZE / 2,
-                (CELL_SIZE * node->position.y) + CELL_SIZE / 2,
-                CELL_SIZE / 3, white);
+            DrawRectangle((CELL_SIZE * node->position.x) - 10 , (CELL_SIZE * node->position.y) + 5, CELL_SIZE + 5, CELL_SIZE - 5, white);
         }
         else if (node->direction.x == 1) {
-            DrawCircle((CELL_SIZE * node->position.x) + CELL_SIZE / 2,
-                (CELL_SIZE * node->position.y) + CELL_SIZE / 2,
-                CELL_SIZE / 3, darkGreen);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE + 5, CELL_SIZE - 5, white );
         }
     }
-    else if (node->direction.x == 0 & node->direction.y == 0) {
-        DrawCircle((CELL_SIZE * node->position.x)+CELL_SIZE/2,
-            (CELL_SIZE * node->position.y) + CELL_SIZE / 2,
-            CELL_SIZE / 3, purple);
-    }
 }
+void DrawOrigin(struct Maze* maze) {
+            DrawRectangle((CELL_SIZE * maze->origin.x) , (CELL_SIZE * maze->origin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, white);
 
+}
 // Maze Functions
 void SetOrigin(struct Maze* maze, int x, int y, struct Node* node) {
     maze->origin = (Vector2) {(float) x, (float) y};
@@ -155,20 +144,22 @@ void Shift(struct Maze* maze){
         }
     }
 
-    SetNextOrigin(maze, (int)(maze->nextOrigin.x + direction.x), (int)(maze->nextOrigin.y + direction.y));
+    SetNextOrigin(maze, (int)(maze->origin.x + direction.x), (int)(maze->origin.y + direction.y));
 
     //ensure direction doesn't point out of bounds
-    if (((maze->nextOrigin.x + direction.x) > maze->width ||
-         (maze->nextOrigin.y + direction.y) > maze->height ||
-         (maze->nextOrigin.x + direction.x) < 0 ||
-         (maze->nextOrigin.y + direction.y) < 0)) {
+    if (!((maze->origin.x + direction.x) >= maze->width)) {
+        if (!((maze->origin.y + direction.y) >= maze->height)) {
+            if (!((maze->origin.x + direction.x) < 0)) {
+                if (!((maze->origin.y + direction.y) < 0)) {
+                    {
+                        SetNodeDirection(&(maze->map[(int) maze->origin.x][(int) maze->origin.y]), (int) direction.x, (int) direction.y);
 
-    }
-    else {
-        SetNodeDirection(&(maze->map[(int) maze->origin.x][(int) maze->origin.y]), (int) direction.x, (int) direction.y);
-        // determine adjacent position
-        // set new origin position and remove its direction
-        SetOrigin(maze, ((int) maze->origin.x+direction.x), ((int) maze->origin.y+direction.y), &(maze->map[(int) maze->origin.x][(int) maze->origin.y]));
+                        // set new origin position and remove its direction
+                        SetOrigin(maze, ((int) maze->nextOrigin.x), ((int) maze->nextOrigin.y), &(maze->map[(int) maze->nextOrigin.x][(int) maze->nextOrigin.y]));
+                    }
+                }
+            }
+        }
     }
 
     //print origin for debug
@@ -176,19 +167,23 @@ void Shift(struct Maze* maze){
     printf("%d \n" , (int) maze->origin.y);
 }
 
+
 int main() {
     //-> Init random
     srand(time(NULL)); // NOLINT(*-msc51-cpp)
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(69);
+    SetTargetFPS(120);
 
     // initialise default map
     struct Player player;
     struct Maze maze;
-
     InitializeMaze(&maze, CELL_COUNT,CELL_COUNT);
+    for (int i; i<(CELL_COUNT*CELL_COUNT*CELL_COUNT); i++) {
+        Shift(&maze);
+    }
+
     InitializePlayer(&player);
 
     //Game loop - will run indefinitely until variable changes
@@ -196,18 +191,16 @@ int main() {
         //event handling
         MovePlayer(&player);
 
-        //updating positions
 
-        // create a function called origin.Shift() that would be cool
-        Shift(&maze);
         //drawing updates
-
         BeginDrawing();
+            ClearBackground(BLACK);
             DrawMap(&maze);
-        ClearBackground(BLACK);
-
+            DrawOrigin(&maze);
+            DrawPlayer(&player);
         EndDrawing();
     };
+
     //window closing for end of game
     CloseWindow();
     return 0;
