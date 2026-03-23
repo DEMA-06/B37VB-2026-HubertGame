@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define CELL_SIZE  40
-#define CELL_COUNT 20
+#define CELL_COUNT 35
 
 #define UP    (Vector2) {  0, -1 }
 #define DOWN  (Vector2) {  0,  1 }
@@ -49,11 +49,11 @@ void DrawNode(struct Node* node) {
     if (node->direction.x == 0) {
         if (node->direction.y == -1) {
             //upward node
-            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) , CELL_SIZE - 5, CELL_SIZE, red);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) , CELL_SIZE - 5, CELL_SIZE, white);
         }
         else if (node->direction.y == 1) {
             //downward node
-            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE - 5, CELL_SIZE, green);
+            DrawRectangle((CELL_SIZE * node->position.x) , (CELL_SIZE * node->position.y) + 5, CELL_SIZE - 5, CELL_SIZE, white);
         }
     }
     else if (node->direction.y == 0) {
@@ -174,22 +174,11 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
         player->canMoveLeft = false;
     }
 
-    //check movement up
-    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.y ==  -1) ||
-        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.x != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == 1)) &&
-        (maze->map[((int)player->position.x)] [(((int) player->position.y) - 1)].direction.y == 1)))
-    {
-        player->canMoveUp = true;
-    }
-    else
-    {
-        player->canMoveUp = false;
-    }
-
     //check movement down
-    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.y ==  1) ||
-        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.x != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == -1)) &&
-        (maze->map[((int)player->position.x)] [((int) player->position.y) + 1].direction.y == -1)))
+    if   (maze->map[(int)player->position.x][(int)player->position.y].direction.y == 1 ||
+        ((maze->map[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
+          maze->map[(int)player->position.x][(int)player->position.y].direction.y == -1 ) &&
+          maze->map[(int)player->position.x][(int)player->position.y + 1].direction.y == -1))
     {
         player->canMoveDown = true;
     }
@@ -197,12 +186,27 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
     {
         player->canMoveDown = false;
     }
+
+    //check movement up
+
+    if   (maze->map[(int)player->position.x][(int)player->position.y].direction.y == -1 ||
+        ((maze->map[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
+          maze->map[(int)player->position.x][(int)player->position.y].direction.y == 1 ) &&
+          maze->map[(int)player->position.x][(int)player->position.y - 1].direction.y == 1))
+    {
+        player->canMoveUp = true;
+    }
+    else
+    {
+        player->canMoveUp = false;
+    }
 };
 void CheckOnOrigin(struct Maze* maze, struct Player* player) {
     if (player->position.x == maze->origin.x) {
-        if (player->position.y == maze->origin.y);
-        for (int i; i<(CELL_COUNT*CELL_COUNT); i++) {
-            Shift(maze);
+        if (player->position.y == maze->origin.y) {
+            for (int i; i<(CELL_COUNT*CELL_COUNT*CELL_COUNT); i++) {
+                Shift(maze);
+            }
         }
     }
 };
@@ -239,7 +243,7 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(200);
+    SetTargetFPS(120);
 
     // initialise default map
     struct Player player;
