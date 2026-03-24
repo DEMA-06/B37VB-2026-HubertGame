@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define CELL_SIZE  40
-#define CELL_COUNT 35
+#define CELL_COUNT 20
 
 #define UP    (Vector2) {  0, -1 }
 #define DOWN  (Vector2) {  0,  1 }
@@ -33,10 +33,17 @@ struct Node {
     Vector2 direction;
 };
 struct Maze {
+
     int width, height;
-    struct Node map[CELL_COUNT][CELL_COUNT];
+    int iterations;
+    bool isMapA;
+    bool isInitialised;
+    struct Node (*map)[CELL_COUNT];
+    struct Node mapA[CELL_COUNT][CELL_COUNT];
+    struct Node mapB[CELL_COUNT][CELL_COUNT];
     Vector2 origin;
     Vector2 nextOrigin;
+    Vector2 visibleOrigin;
     Vector2 possibleDirections[];
 };
 
@@ -68,9 +75,10 @@ void DrawNode(struct Node* node) {
     }
 }
 void DrawOrigin(struct Maze* maze) {
-            DrawRectangle((CELL_SIZE * maze->origin.x) , (CELL_SIZE * maze->origin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, blue);
+            DrawRectangle((CELL_SIZE * maze->visibleOrigin.x) , (CELL_SIZE * maze->visibleOrigin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, blue);
 
 }
+
 // Maze Functions
 void SetOrigin(struct Maze* maze, int x, int y, struct Node* node) {
     maze->origin = (Vector2) {(float) x, (float) y};
@@ -79,27 +87,8 @@ void SetOrigin(struct Maze* maze, int x, int y, struct Node* node) {
 void SetNextOrigin(struct Maze* maze, int x, int y) {
     maze->nextOrigin = (Vector2) {(float) x, (float) y};
 }
-void InitializeMaze(struct Maze* maze, int width, int height) {
-    maze->width      = width;
-    maze->height     = height;
-    maze->origin     = (Vector2) {(float)(width - 1) ,(float)(height - 1)};
-    maze->nextOrigin = (Vector2) {0,0};
-
-    for (int y = 0; y < width; y++) {
-        for (int x=0; x<(height - 1); x++) {
-            maze->map[x][y] = (struct Node){ .position.x=(float)x, .position.y=(float)y, .direction.x=1, .direction.y=0 };
-        }
-        maze->map[width - 1][y] =
-            (struct Node){ .position.x=(float)(width - 1), .position.y= (float) y, .direction.x=0, .direction.y=1 };
-    }
-    SetOrigin(maze, width - 1, height - 1, &(maze->map[height-1][height-1]));
-}
-void DrawMap(struct Maze* maze) {
-    for (int y = 0; y < maze->height; y++) {
-        for (int x = 0; x < maze->width; x++) {
-            DrawNode(&(maze->map[x][y]));
-        }
-    }
+void SetVisibleOrigin(struct Maze* maze, int x, int y) {
+    maze->visibleOrigin = (Vector2) {(float) x, (float) y};
 }
 void Shift(struct Maze* maze){
     int randIndex = (rand() % 4);
@@ -130,30 +119,119 @@ void Shift(struct Maze* maze){
     }
 
     SetNextOrigin(maze, (int)(maze->origin.x + direction.x), (int)(maze->origin.y + direction.y));
-
+    //shift map A
     //ensure direction doesn't point out of bounds
-    if (!((maze->origin.x + direction.x) >= maze->width)) {
-        if (!((maze->origin.y + direction.y) >= maze->height)) {
-            if (!((maze->origin.x + direction.x) < 0)) {
-                if (!((maze->origin.y + direction.y) < 0)) {
-                    {
-                        SetNodeDirection(&(maze->map[(int) maze->origin.x][(int) maze->origin.y]), (int) direction.x, (int) direction.y);
+    if (maze->isInitialised == false) {
+        if (!((maze->origin.x + direction.x) >= maze->width)) {
+            if (!((maze->origin.y + direction.y) >= maze->height)) {
+                if (!((maze->origin.x + direction.x) < 0)) {
+                    if (!((maze->origin.y + direction.y) < 0)) {
+                        {
+                            SetNodeDirection(&maze->map[(int) maze->origin.x][(int) maze->origin.y], (int) direction.x, (int) direction.y);
 
-                        // set new origin position and remove its direction
-                        SetOrigin(maze, ((int) maze->nextOrigin.x), ((int) maze->nextOrigin.y), &(maze->map[(int) maze->nextOrigin.x][(int) maze->nextOrigin.y]));
+                            // set new origin position and remove its direction
+                            SetOrigin(maze, ((int) maze->nextOrigin.x), ((int) maze->nextOrigin.y), &(maze->map[(int) maze->nextOrigin.x][(int) maze->nextOrigin.y]));
+                        }
                     }
                 }
             }
         }
     }
 }
+void InitializeMaze(struct Maze* maze, int width, int height) {
+    maze->width      = width;
+    maze->height     = height;
+    maze->origin     = (Vector2) {(float)(width - 1) ,(float)(height - 1)};
+    maze->nextOrigin = (Vector2) {0,0};
+    maze->isMapA = true; //starting the map present in mapA
+    maze->map = maze->mapA;
+    maze->isInitialised = false;
+    maze->iterations = 0;
+
+    //initialise first perfect maze
+    for (int y = 0; y < width; y++) {
+        for (int x=0; x<(height - 1); x++) {
+            maze->mapA[x][y] = (struct Node){ .position.x=(float)x, .position.y=(float)y, .direction.x=1, .direction.y=0 };
+        }
+        maze->mapA[width - 1][y] =
+            (struct Node){ .position.x=(float)(width - 1), .position.y= (float) y, .direction.x=0, .direction.y=1 };
+    }
+    SetOrigin(maze, width - 1, height - 1, &(maze->mapA[height-1][height-1]));
+
+    //initialise second perfect maze
+    for (int y = 0; y < width; y++) {
+        for (int x=0; x<(height - 1); x++) {
+            maze->mapB[x][y] = (struct Node){ .position.x=(float)x, .position.y=(float)y, .direction.x=1, .direction.y=0 };
+        }
+        maze->mapB[width - 1][y] =
+            (struct Node){ .position.x=(float)(width - 1), .position.y= (float) y, .direction.x=0, .direction.y=1 };
+    }
+    SetOrigin(maze, width - 1, height - 1, &(maze->mapB[height-1][height-1]));
+
+    for (int i; i<(CELL_COUNT*CELL_COUNT*10); i++) {
+        Shift(maze);
+        SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
+    }
+    maze->isInitialised = true;
+}
+void DrawMap(struct Maze* maze) {
+
+    for (int y = 0; y < maze->height; y++) {
+        for (int x = 0; x < maze->width; x++) {
+            if (maze->isMapA == true) {
+                DrawNode(&(maze->mapA[x][y]));
+            }
+            else if (maze->isMapA == false){
+                DrawNode(&(maze->mapB[x][y]));
+            }
+        }
+    }
+}
+
+void ShiftOnCommand(struct Maze* maze) {
+    if (IsKeyDown(KEY_SPACE)) {
+        Shift(maze);
+    }
+}
+void SwitchMap(struct Maze* maze) {
+    if (maze->isMapA == true) {
+        maze->isMapA = false;
+        maze->iterations = 0;
+        SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
+    }
+    else if (maze->isMapA == false) {
+        maze->isMapA = true;
+        maze->iterations = 0;
+        SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
+    }
+
+
+};
+void PrepNextMap(struct Maze* maze) {
+    if (maze->iterations<100) {
+        Shift(maze);
+        maze->iterations++;
+    }
+}
 
 //Player Functions
+void InitializePlayer(struct Player* player) {
+    player->position = (Vector2) { 0, 0};
+    player->canMoveRight = false;
+    player->canMoveLeft  = false;
+    player->canMoveUp    = false;
+    player->canMoveDown  = false;
+    player->score        = 0;
+    player->lives        = 3;
+}
+void DrawPlayer(struct Player* player) {
+    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + 20 , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, purple);
+};
 void CheckWalls(struct Maze* maze, struct Player* player) {
     //check movement right
-    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.x ==  1) ||
-        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == -1)) &&
-        (maze->map[((int)player->position.x + 1)] [(int) player->position.y].direction.x == -1)))
+    if ((maze->mapA[ (int)player->position.x]  [(int) player->position.y].direction.x ==  1) ||
+        (((maze->mapA[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->mapA[((int)player->position.x)] [(int) player->position.y].direction.x == -1)) &&
+        (maze->mapA[((int)player->position.x + 1)] [(int) player->position.y].direction.x == -1)))
         {
         player->canMoveRight = true;
         }
@@ -163,9 +241,9 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
         }
 
     //check movement left
-    if ((maze->map[ (int)player->position.x]  [(int) player->position.y].direction.x ==  -1) ||
-        (((maze->map[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->map[((int)player->position.x)] [(int) player->position.y].direction.x == 1)) &&
-        (maze->map[((int)player->position.x - 1)] [(int) player->position.y].direction.x == 1)))
+    if ((maze->mapA[ (int)player->position.x]  [(int) player->position.y].direction.x ==  -1) ||
+        (((maze->mapA[((int)player->position.x)] [(int) player->position.y].direction.y != 0) || (maze->mapA[((int)player->position.x)] [(int) player->position.y].direction.x == 1)) &&
+        (maze->mapA[((int)player->position.x - 1)] [(int) player->position.y].direction.x == 1)))
     {
         player->canMoveLeft = true;
     }
@@ -175,10 +253,10 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
     }
 
     //check movement down
-    if   (maze->map[(int)player->position.x][(int)player->position.y].direction.y == 1 ||
-        ((maze->map[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
-          maze->map[(int)player->position.x][(int)player->position.y].direction.y == -1 ) &&
-          maze->map[(int)player->position.x][(int)player->position.y + 1].direction.y == -1))
+    if   (maze->mapA[(int)player->position.x][(int)player->position.y].direction.y == 1 ||
+        ((maze->mapA[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
+          maze->mapA[(int)player->position.x][(int)player->position.y].direction.y == -1 ) &&
+          maze->mapA[(int)player->position.x][(int)player->position.y + 1].direction.y == -1))
     {
         player->canMoveDown = true;
     }
@@ -189,10 +267,10 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
 
     //check movement up
 
-    if   (maze->map[(int)player->position.x][(int)player->position.y].direction.y == -1 ||
-        ((maze->map[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
-          maze->map[(int)player->position.x][(int)player->position.y].direction.y == 1 ) &&
-          maze->map[(int)player->position.x][(int)player->position.y - 1].direction.y == 1))
+    if   (maze->mapA[(int)player->position.x][(int)player->position.y].direction.y == -1 ||
+        ((maze->mapA[(int)player->position.x][(int)player->position.y].direction.x != 0 ||
+          maze->mapA[(int)player->position.x][(int)player->position.y].direction.y == 1 ) &&
+          maze->mapA[(int)player->position.x][(int)player->position.y - 1].direction.y == 1))
     {
         player->canMoveUp = true;
     }
@@ -202,11 +280,11 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
     }
 };
 void CheckOnOrigin(struct Maze* maze, struct Player* player) {
-    if (player->position.x == maze->origin.x) {
-        if (player->position.y == maze->origin.y) {
-            for (int i; i<(CELL_COUNT*CELL_COUNT*CELL_COUNT); i++) {
-                Shift(maze);
-            }
+    if (player->position.x == maze->visibleOrigin.x) {
+        if (player->position.y == maze->visibleOrigin.y) {
+
+                SwitchMap(maze);
+
         }
     }
 };
@@ -224,18 +302,6 @@ void MovePlayer(struct Player* player) {
         player->position.y += 1;
     }
 };
-void DrawPlayer(struct Player* player) {
-    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + 20 , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, purple);
-};
-void InitializePlayer(struct Player* player) {
-    player->position = (Vector2) { 0, 0};
-    player->canMoveRight = false;
-    player->canMoveLeft  = false;
-    player->canMoveUp    = false;
-    player->canMoveDown  = false;
-    player->score        = 0;
-    player->lives        = 3;
-}
 
 int main() {
     //-> Init random
@@ -243,13 +309,13 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(120);
+    SetTargetFPS(300);
 
     // initialise default map
     struct Player player;
     struct Maze maze;
     InitializeMaze(&maze, CELL_COUNT,CELL_COUNT);
-    for (int i; i<(CELL_COUNT*CELL_COUNT*CELL_COUNT); i++) {
+    for (int i; i<(CELL_COUNT*CELL_COUNT*10); i++) {
         Shift(&maze);
     }
 
@@ -257,10 +323,14 @@ int main() {
 
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
+
         //event handling
+        PrepNextMap(&maze);
         CheckOnOrigin(&maze, &player);
         CheckWalls(&maze, &player);
+        ShiftOnCommand(&maze);
         MovePlayer(&player);
+
         //drawing updates
         BeginDrawing();
             ClearBackground(BLACK);
