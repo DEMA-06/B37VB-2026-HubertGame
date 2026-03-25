@@ -341,11 +341,10 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
         player->canMoveUp = false;
     }
 };
-void CheckOnOrigin(struct Maze* maze, struct Player* player, struct Timer* timer) {
+void CheckOnOrigin(struct Maze* maze, struct Player* player) {
     if (player->position.x == maze->visibleOrigin.x) {
         if (player->position.y == maze->visibleOrigin.y) {
                 SwitchMap(maze);
-                ResetTimer(timer);
         }
     }
 };
