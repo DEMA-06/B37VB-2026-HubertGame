@@ -197,9 +197,11 @@ void InitMaze(struct Maze* maze, int width, int height) {
     maze->height     = height;
     maze->origin     = (Vector2) {(float)(width - 1) ,(float)(height - 1)};
     maze->nextOrigin = (Vector2) {0,0};
-    maze->isMapA = false; //starting the map present in mapA
-    maze->isGenerating = false;
+    maze->isMapA = true; //starting the map present in mapA
+    maze->visibleMap = maze->mapA;
     maze->map = maze->mapA;
+    maze->isGenerating = false;
+    
     maze->iterations = 0;
 
     //initialise first perfect maze
@@ -212,10 +214,11 @@ void InitMaze(struct Maze* maze, int width, int height) {
     }
     SetOrigin(maze, width - 1, height - 1, &(maze->mapA[height-1][height-1]));
 
-    for (int i; i<(CELL_COUNT*CELL_COUNT*CELL_COUNT); i++) {
+    for (int i; i<(CELL_COUNT*CELL_COUNT*100); i++) {
         Shift(maze);
         SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
     }
+    maze->map = maze->mapB;
 
     //initialise second perfect maze
     for (int y = 0; y < width; y++) {
@@ -233,8 +236,6 @@ void DrawMap(struct Maze* maze) {
     for (int y = 0; y < maze->height; y++) {
         for (int x = 0; x < maze->width; x++) {
                 DrawNode(&(maze->visibleMap[x][y]));
-                //printf("Drawing A\n");
-
         }
     }
 }
@@ -377,10 +378,6 @@ int main() {
     struct Maze maze;
     struct Timer timer;
     InitMaze(&maze, CELL_COUNT,CELL_COUNT);
-    for (int i; i<(CELL_COUNT*CELL_COUNT*10); i++) {
-        Shift(&maze);
-    }
-
     InitPlayer(&player);
 
     //Game loop - will run indefinitely until variable changes
