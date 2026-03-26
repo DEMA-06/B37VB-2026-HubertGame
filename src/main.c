@@ -13,9 +13,9 @@
 #define RIGHT (Vector2) {  1,  0 }
 
 // initialise colour presets
-Color green = {173,204,96,255};
+Color green = {120,255,96,200};
 Color darkGreen = {43, 51, 24, 255};
-Color blue = {43,22,133,255};
+Color blue = {43,22,133,150};
 Color white = {255,255,255,255};
 Color red = {190,30,40,255};
 Color purple = {190,30, 85, 255};
@@ -47,10 +47,12 @@ struct Maze {
     Vector2 visibleOrigin;
     Vector2 possibleDirections[];
 };
-struct Timer {
+struct Time {
     float timeLeft;
     float bonusTime;
+    float fadeTime;
 };
+
 // Node Functions
 void SetNodeDirection(struct Node* node, int x, int y) {
     node->direction = (Vector2) {(float) x, (float) y};
@@ -113,8 +115,46 @@ void DrawNode(struct Node* node) {
     }
 }
 void DrawOrigin(struct Maze* maze) {
-            DrawRectangle((CELL_SIZE * maze->visibleOrigin.x) , (CELL_SIZE * maze->visibleOrigin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, blue);
+            if (maze->visibleOrigin.x == 0 && maze->visibleOrigin.y != CELL_COUNT - 1) {
+                DrawRectangle((CELL_SIZE * maze->visibleOrigin.x + 5) , (CELL_SIZE * maze->visibleOrigin.y) + 5, CELL_SIZE - 10, CELL_SIZE - 5, purple);
 
+            }
+            else if (maze->visibleOrigin.x != 0 && maze->visibleOrigin.y == CELL_COUNT - 1) {
+                DrawRectangle((CELL_SIZE * maze->visibleOrigin.x) , (CELL_SIZE * maze->visibleOrigin.y ) + 5, CELL_SIZE - 5, CELL_SIZE - 10, purple);
+            }
+            else if (maze->visibleOrigin.x == 0 && maze->visibleOrigin.y == CELL_COUNT - 1) {
+                DrawRectangle((CELL_SIZE * maze->visibleOrigin.x + 5) , (CELL_SIZE * maze->visibleOrigin.y) + 5, CELL_SIZE - 10, CELL_SIZE - 10, purple);
+
+            }
+            else {
+                DrawRectangle((CELL_SIZE * maze->visibleOrigin.x) , (CELL_SIZE * maze->visibleOrigin.y) + 5, CELL_SIZE - 5, CELL_SIZE - 5, purple);
+
+            }
+}
+
+// Timer Functions
+void InitTimer(struct Time* timer) {
+
+};
+void ResetTimer(struct Time* timer) {
+
+}
+
+//HUD functions
+void AddScore(struct Player* player) {
+    player->score += 100;
+}
+void DrawScore(struct Player* player) {
+    DrawRectangle((CELL_COUNT*CELL_SIZE - CELL_SIZE * 5) - CELL_SIZE/3, 10, CELL_SIZE*5, 40, blue);
+    if (player->score > 100 && player->score < 1000) {
+        DrawText (TextFormat("Score: %i", player->score), (CELL_COUNT*CELL_SIZE - CELL_SIZE * 7), 10, 40, green);
+    }
+    else if (player->score > 1000) {
+        DrawText (TextFormat("Score: %i", player->score), (CELL_COUNT*CELL_SIZE - CELL_SIZE * 5) - CELL_SIZE, 10, 40, green);
+    }
+    else {
+        DrawText (TextFormat("Score: %i", player->score), CELL_COUNT*CELL_SIZE - CELL_SIZE * 5, 10, 40, green);
+    }
 }
 
 // Maze Functions
@@ -201,7 +241,7 @@ void InitMaze(struct Maze* maze, int width, int height) {
     maze->visibleMap = maze->mapA;
     maze->map = maze->mapA;
     maze->isGenerating = false;
-    
+
     maze->iterations = 0;
 
     //initialise first perfect maze
@@ -258,14 +298,7 @@ void RenderText(struct Player* player, struct Maze* maze) {
     if (maze->isGenerating == true) {
         DrawText(TextFormat("GENERATING. . ."), 5, CELL_COUNT*CELL_SIZE - 25, 20, green);
     }
-}
-
-// Timer Functions
-void InitTimer(struct Timer* timer) {
-
-};
-void ResetTimer(struct Timer* timer) {
-
+    DrawScore(player);
 }
 
 //Player Functions
@@ -279,7 +312,7 @@ void InitPlayer(struct Player* player) {
     player->lives        = 3;
 }
 void DrawPlayer(struct Player* player) {
-    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + 20 , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, purple);
+    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + (CELL_SIZE/2) , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, green);
 };
 void CheckWalls(struct Maze* maze, struct Player* player) {
     //check movement right
@@ -346,6 +379,7 @@ void CheckOnOrigin(struct Maze* maze, struct Player* player) {
     if (player->position.x == maze->visibleOrigin.x) {
         if (player->position.y == maze->visibleOrigin.y) {
                 SwitchMap(maze);
+                AddScore(player);
         }
     }
 };
@@ -371,12 +405,12 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(8000);
+    SetTargetFPS(1000);
 
     // initialise default map
     struct Player player;
     struct Maze maze;
-    struct Timer timer;
+    struct Time timer;
     InitMaze(&maze, CELL_COUNT,CELL_COUNT);
     InitPlayer(&player);
 
