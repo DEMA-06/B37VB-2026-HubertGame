@@ -52,6 +52,12 @@ struct Time {
     float bonusTime;
     float fadeTime;
 };
+struct HUD {
+    int scoreSize, scoreLength;
+    Vector2 scorePos;
+    Vector2 scoreBackgndPos;
+
+};
 
 // Node Functions
 void SetNodeDirection(struct Node* node, int x, int y) {
@@ -141,20 +147,21 @@ void ResetTimer(struct Time* timer) {
 }
 
 //HUD functions
+void InitScore(struct HUD* hud) {
+    hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
+    hud->scorePos.y = CELL_SIZE/4;
+    hud->scoreSize = CELL_SIZE;
+
+}
 void AddScore(struct Player* player) {
     player->score += 100;
 }
-void DrawScore(struct Player* player) {
+void CalcScorePos(struct Player* player, struct HUD* hud) {
+    // TODO: IMPLEMENT THIS
+}
+void DrawScore(struct Player* player, struct HUD* hud) {
     DrawRectangle((CELL_COUNT*CELL_SIZE - CELL_SIZE * 5) - CELL_SIZE/3, 10, CELL_SIZE*5, 40, blue);
-    if (player->score > 100 && player->score < 1000) {
-        DrawText (TextFormat("Score: %i", player->score), (CELL_COUNT*CELL_SIZE - CELL_SIZE * 7), 10, 40, green);
-    }
-    else if (player->score > 1000) {
-        DrawText (TextFormat("Score: %i", player->score), (CELL_COUNT*CELL_SIZE - CELL_SIZE * 5) - CELL_SIZE, 10, 40, green);
-    }
-    else {
-        DrawText (TextFormat("Score: %i", player->score), CELL_COUNT*CELL_SIZE - CELL_SIZE * 5, 10, 40, green);
-    }
+    DrawText (TextFormat("Score: %i", player->score), hud->scorePos.x, hud->scorePos.y, hud->scoreSize, green);
 }
 
 // Maze Functions
@@ -294,11 +301,11 @@ void PrepNextMap(struct Maze* maze) {
         maze->isGenerating = false;
     }
 }
-void RenderText(struct Player* player, struct Maze* maze) {
+void RenderText(struct Player* player, struct Maze* maze, struct HUD* hud) {
     if (maze->isGenerating == true) {
         DrawText(TextFormat("GENERATING. . ."), 5, CELL_COUNT*CELL_SIZE - 25, 20, green);
     }
-    DrawScore(player);
+    DrawScore(player, hud);
 }
 
 //Player Functions
@@ -411,8 +418,10 @@ int main() {
     struct Player player;
     struct Maze maze;
     struct Time timer;
+    struct HUD hud;
     InitMaze(&maze, CELL_COUNT,CELL_COUNT);
     InitPlayer(&player);
+    InitScore(&hud);
 
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
