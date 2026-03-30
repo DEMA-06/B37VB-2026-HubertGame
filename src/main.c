@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <raylib.h>
 #include <stdio.h>
-#include <time.h>
+
 
 #define CELL_SIZE  40
-#define CELL_COUNT 20
+#define CELL_COUNT 15
+#define FRAME_RATE 1000
 
 #define UP    (Vector2) {  0, -1 }
 #define DOWN  (Vector2) {  0,  1 }
@@ -17,7 +18,7 @@ Color green = {120,255,96,200};
 Color darkGreen = {43, 51, 24, 255};
 Color blue = {43,22,133,150};
 Color white = {255,255,255,255};
-Color red = {190,30,40,255};
+Color red = {190,30,40,180};
 Color purple = {190,30, 85, 255};
 
 struct Player {
@@ -49,8 +50,9 @@ struct Maze {
 };
 struct Time {
     float timeLeft;
-    float bonusTime;
-    float fadeTime;
+    float addTime;
+    Vector2 timerPos;
+    Vector2 timerSize;
 };
 struct HUD {
     int scoreSize, scoreLength;
@@ -139,11 +141,24 @@ void DrawOrigin(struct Maze* maze) {
 }
 
 // Timer Functions
-void InitTimer(struct Time* timer) {
-
+void InitTime(struct Time* time) {
+    time->timeLeft = FRAME_RATE;
+    time->addTime = FRAME_RATE / 10;
+    time->timerPos.x = CELL_SIZE/4;
+    time->timerPos.y = CELL_SIZE/4;
+    time->timerSize.x = CELL_SIZE;
+    time->timerSize.y = time->timeLeft/3;
 };
-void ResetTimer(struct Time* timer) {
+void CalcTimer(struct Time* time) {
+    time->timeLeft -= 0.05;
+    time->timerSize.y = time->timeLeft/3;
+    if (time->timeLeft >= FRAME_RATE) {
+        time->timeLeft = FRAME_RATE;
+    }
 
+}
+void ResetTimer(struct Time* time) {
+    time->timeLeft += time->addTime;
 }
 
 //HUD functions
@@ -151,17 +166,35 @@ void InitScore(struct HUD* hud) {
     hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
     hud->scorePos.y = CELL_SIZE/4;
     hud->scoreSize = CELL_SIZE;
-
+    hud->scoreBackgndPos.y = CELL_SIZE/4 - 5;
 }
 void AddScore(struct Player* player) {
     player->score += 100;
 }
 void CalcScorePos(struct Player* player, struct HUD* hud) {
-    // TODO: IMPLEMENT THIS
+// calculating position of text
+    if (player->score < 100) {
+        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
+        hud->scoreLength = CELL_SIZE * 4.5;
+    }
+    else if (player->score >= 100 && player->score < 1000) {
+        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 6;
+        hud->scoreLength = CELL_SIZE * 5.8;
+    }
+    else if (player->score >= 1000 && player->score < 10000) {
+        hud->scoreLength = CELL_SIZE * 6;
+    }
+
+    // calculating position of background rectangle
+    hud->scoreBackgndPos.x = hud->scorePos.x - CELL_SIZE / 6;
+    hud->scoreBackgndPos.y = hud->scorePos.y - CELL_SIZE / 6;
 }
 void DrawScore(struct Player* player, struct HUD* hud) {
-    DrawRectangle((CELL_COUNT*CELL_SIZE - CELL_SIZE * 5) - CELL_SIZE/3, 10, CELL_SIZE*5, 40, blue);
+    DrawRectangle(hud->scoreBackgndPos.x, 10, hud->scoreLength, hud->scoreSize, blue);
     DrawText (TextFormat("Score: %i", player->score), hud->scorePos.x, hud->scorePos.y, hud->scoreSize, green);
+}
+void DrawTime (struct Time* time) {
+    DrawRectangle( time->timerPos.x , time->timerPos.y , time->timerSize.y , time->timerSize.x, red);
 }
 
 // Maze Functions
@@ -279,16 +312,16 @@ void InitMaze(struct Maze* maze, int width, int height) {
 
 }
 void DrawMap(struct Maze* maze) {
-
     for (int y = 0; y < maze->height; y++) {
         for (int x = 0; x < maze->width; x++) {
                 DrawNode(&(maze->visibleMap[x][y]));
         }
     }
 }
-void SwitchOnCommand(struct Maze* maze) {
+void SwitchOnCommand(struct Maze* maze, struct Player* player) {
     if (IsKeyPressed(KEY_SPACE)) {
         SwitchMap(maze);
+        AddScore(player);
     }
 }
 void PrepNextMap(struct Maze* maze) {
@@ -301,16 +334,17 @@ void PrepNextMap(struct Maze* maze) {
         maze->isGenerating = false;
     }
 }
-void RenderText(struct Player* player, struct Maze* maze, struct HUD* hud) {
+void RenderText(struct Player* player, struct Maze* maze, struct HUD* hud, struct Time* time) {
     if (maze->isGenerating == true) {
         DrawText(TextFormat("GENERATING. . ."), 5, CELL_COUNT*CELL_SIZE - 25, 20, green);
     }
     DrawScore(player, hud);
+    DrawTime(time);
 }
 
 //Player Functions
 void InitPlayer(struct Player* player) {
-    player->position = (Vector2) { 0, 0};
+    player->position = (Vector2) { 9, 9};
     player->canMoveRight = false;
     player->canMoveLeft  = false;
     player->canMoveUp    = false;
@@ -382,11 +416,12 @@ void CheckWalls(struct Maze* maze, struct Player* player) {
         player->canMoveUp = false;
     }
 };
-void CheckOnOrigin(struct Maze* maze, struct Player* player) {
+void CheckOnOrigin(struct Maze* maze, struct Player* player, struct Time* time) {
     if (player->position.x == maze->visibleOrigin.x) {
         if (player->position.y == maze->visibleOrigin.y) {
                 SwitchMap(maze);
                 AddScore(player);
+                ResetTimer(time);
         }
     }
 };
@@ -412,35 +447,43 @@ int main() {
 
     //opening a window
     InitWindow(CELL_SIZE * CELL_COUNT,CELL_SIZE * CELL_COUNT,"Be aMazed");
-    SetTargetFPS(1000);
+    SetTargetFPS(FRAME_RATE);
 
     // initialise default map
     struct Player player;
     struct Maze maze;
-    struct Time timer;
+    struct Time time;
     struct HUD hud;
     InitMaze(&maze, CELL_COUNT,CELL_COUNT);
     InitPlayer(&player);
     InitScore(&hud);
+    InitTime(&time);
 
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
+            //event handling
+                //map functions
+                    PrepNextMap(&maze);
+                    SwitchOnCommand(&maze, &player);
 
-        //event handling
-        PrepNextMap(&maze);
-        CheckOnOrigin(&maze, &player);
-        CheckWalls(&maze, &player);
-        SwitchOnCommand(&maze);
-        MovePlayer(&player);
+                //player functions
+                    CheckOnOrigin(&maze, &player, &time);
+                    CheckWalls(&maze, &player);
+                    MovePlayer(&player);
 
-        //drawing updates
-        BeginDrawing();
-            ClearBackground(white);
-            DrawMap(&maze);
-            DrawOrigin(&maze);
-            DrawPlayer(&player);
-            RenderText(&player, &maze);
-        EndDrawing();
+                //time function
+                    CalcTimer(&time);
+                //hud functions
+                    CalcScorePos(&player, &hud);
+
+            //drawing updates
+            BeginDrawing();
+                ClearBackground(white);
+                DrawMap(&maze);
+                DrawOrigin(&maze);
+                DrawPlayer(&player);
+                RenderText(&player, &maze, &hud, &time);
+            EndDrawing();
     };
 
     //window closing for end of game
