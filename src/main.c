@@ -28,7 +28,6 @@ struct Player {
     bool canMoveUp;
     bool canMoveDown;
     int score;
-    int lives;
 };
 struct Node {
     Vector2 position;
@@ -294,10 +293,10 @@ void InitMaze(struct Maze* maze, int width, int height) {
     }
     SetOrigin(maze, width - 1, height - 1, &(maze->mapA[height-1][height-1]));
 
-    for (int i; i<(CELL_COUNT*CELL_COUNT*100); i++) {
+    for (int i = 0; i < (CELL_COUNT*CELL_COUNT*100); i++) {
         Shift(maze);
-        SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
     }
+    SetVisibleOrigin(maze, maze->origin.x, maze->origin.y);
     maze->map = maze->mapB;
 
     //initialise second perfect maze
@@ -344,13 +343,12 @@ void RenderText(struct Player* player, struct Maze* maze, struct HUD* hud, struc
 
 //Player Functions
 void InitPlayer(struct Player* player) {
-    player->position = (Vector2) { 9, 9};
+    player->position = (Vector2) { 0, 0};
     player->canMoveRight = false;
     player->canMoveLeft  = false;
     player->canMoveUp    = false;
     player->canMoveDown  = false;
     player->score        = 0;
-    player->lives        = 3;
 }
 void DrawPlayer(struct Player* player) {
     DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + (CELL_SIZE/2) , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, green);
