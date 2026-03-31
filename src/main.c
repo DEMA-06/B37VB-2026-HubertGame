@@ -57,7 +57,8 @@ struct HUD {
     int scoreSize, scoreLength;
     Vector2 scorePos;
     Vector2 scoreBackgndPos;
-
+    bool alive;
+    Vector2 menuPos;
 };
 
 // Node Functions
@@ -142,14 +143,14 @@ void DrawOrigin(struct Maze* maze) {
 // Timer Functions
 void InitTime(struct Time* time) {
     time->timeLeft = FRAME_RATE;
-    time->addTime = FRAME_RATE / 10;
+    time->addTime = FRAME_RATE / 8;
     time->timerPos.x = CELL_SIZE/4;
     time->timerPos.y = CELL_SIZE/4;
     time->timerSize.x = CELL_SIZE;
     time->timerSize.y = time->timeLeft/3;
 };
 void CalcTimer(struct Time* time) {
-    time->timeLeft -= 0.05;
+    time->timeLeft -= 0.035;
     time->timerSize.y = time->timeLeft/3;
     if (time->timeLeft >= FRAME_RATE) {
         time->timeLeft = FRAME_RATE;
@@ -166,6 +167,8 @@ void InitScore(struct HUD* hud) {
     hud->scorePos.y = CELL_SIZE/4;
     hud->scoreSize = CELL_SIZE;
     hud->scoreBackgndPos.y = CELL_SIZE/4 - 5;
+    hud->menuPos.x = CELL_COUNT*CELL_SIZE/6;
+    hud->menuPos.y = CELL_COUNT*CELL_SIZE/4;
 }
 void AddScore(struct Player* player) {
     player->score += 100;
@@ -194,6 +197,17 @@ void DrawScore(struct Player* player, struct HUD* hud) {
 }
 void DrawTime (struct Time* time) {
     DrawRectangle( time->timerPos.x , time->timerPos.y , time->timerSize.y , time->timerSize.x, red);
+}
+void DrawMenu (struct HUD* hud, struct Player* player) {
+    DrawRectangle(hud->menuPos.x, hud->menuPos.y, CELL_SIZE*10, CELL_SIZE*6, darkGreen);
+    DrawText(TextFormat("You Died! Good try though, you got"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE/2, 20, WHITE);
+    DrawText(TextFormat("%i Points!", player->score), hud->menuPos.x + CELL_SIZE*3, hud->menuPos.y + CELL_SIZE*2, 40, WHITE);
+    DrawText(TextFormat("You should gloat to your friends"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE*4, 20, WHITE);
+};
+void CheckAlive(struct Time* time, struct HUD* hud) {
+    if (time->timeLeft <= 0) {
+        hud->alive = false;
+    }
 }
 
 // Maze Functions
@@ -271,7 +285,7 @@ void Shift(struct Maze* maze){
         }
 
 }
-void InitMaze(struct Maze* maze, int width, int height) {
+void InitMaze(struct Maze* maze,struct HUD* hud, int width, int height) {
     maze->width      = width;
     maze->height     = height;
     maze->origin     = (Vector2) {(float)(width - 1) ,(float)(height - 1)};
@@ -280,8 +294,8 @@ void InitMaze(struct Maze* maze, int width, int height) {
     maze->visibleMap = maze->mapA;
     maze->map = maze->mapA;
     maze->isGenerating = false;
-
     maze->iterations = 0;
+    hud->alive = true;
 
     //initialise first perfect maze
     for (int y = 0; y < width; y++) {
@@ -452,13 +466,15 @@ int main() {
     struct Maze maze;
     struct Time time;
     struct HUD hud;
-    InitMaze(&maze, CELL_COUNT,CELL_COUNT);
+    InitMaze(&maze, &hud, CELL_COUNT,CELL_COUNT);
     InitPlayer(&player);
     InitScore(&hud);
     InitTime(&time);
 
     //Game loop - will run indefinitely until variable changes
     while (WindowShouldClose() == false) {
+
+        if (hud.alive == true) {
             //event handling
                 //map functions
                     PrepNextMap(&maze);
@@ -473,15 +489,22 @@ int main() {
                     CalcTimer(&time);
                 //hud functions
                     CalcScorePos(&player, &hud);
-
+                    CheckAlive(&time,&hud);
             //drawing updates
+                BeginDrawing();
+                    ClearBackground(white);
+                    DrawMap(&maze);
+                    DrawOrigin(&maze);
+                    DrawPlayer(&player);
+                    RenderText(&player, &maze, &hud, &time);
+                EndDrawing();
+        }
+        else if (hud.alive == false) {
             BeginDrawing();
-                ClearBackground(white);
-                DrawMap(&maze);
-                DrawOrigin(&maze);
-                DrawPlayer(&player);
-                RenderText(&player, &maze, &hud, &time);
+                ClearBackground(BLACK);
+                DrawMenu(&hud, &player);
             EndDrawing();
+        }
     };
 
     //window closing for end of game
