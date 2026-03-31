@@ -161,54 +161,7 @@ void ResetTimer(struct Time* time) {
     time->timeLeft += time->addTime;
 }
 
-//HUD functions
-void InitScore(struct HUD* hud) {
-    hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
-    hud->scorePos.y = CELL_SIZE/4;
-    hud->scoreSize = CELL_SIZE;
-    hud->scoreBackgndPos.y = CELL_SIZE/4 - 5;
-    hud->menuPos.x = CELL_COUNT*CELL_SIZE/6;
-    hud->menuPos.y = CELL_COUNT*CELL_SIZE/4;
-}
-void AddScore(struct Player* player) {
-    player->score += 100;
-}
-void CalcScorePos(struct Player* player, struct HUD* hud) {
-// calculating position of text
-    if (player->score < 100) {
-        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
-        hud->scoreLength = CELL_SIZE * 4.5;
-    }
-    else if (player->score >= 100 && player->score < 1000) {
-        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 6;
-        hud->scoreLength = CELL_SIZE * 5.8;
-    }
-    else if (player->score >= 1000 && player->score < 10000) {
-        hud->scoreLength = CELL_SIZE * 6;
-    }
 
-    // calculating position of background rectangle
-    hud->scoreBackgndPos.x = hud->scorePos.x - CELL_SIZE / 6;
-    hud->scoreBackgndPos.y = hud->scorePos.y - CELL_SIZE / 6;
-}
-void DrawScore(struct Player* player, struct HUD* hud) {
-    DrawRectangle(hud->scoreBackgndPos.x, 10, hud->scoreLength, hud->scoreSize, blue);
-    DrawText (TextFormat("Score: %i", player->score), hud->scorePos.x, hud->scorePos.y, hud->scoreSize, green);
-}
-void DrawTime (struct Time* time) {
-    DrawRectangle( time->timerPos.x , time->timerPos.y , time->timerSize.y , time->timerSize.x, red);
-}
-void DrawMenu (struct HUD* hud, struct Player* player) {
-    DrawRectangle(hud->menuPos.x, hud->menuPos.y, CELL_SIZE*10, CELL_SIZE*6, darkGreen);
-    DrawText(TextFormat("You Died! Good try though, you got"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE/2, 20, WHITE);
-    DrawText(TextFormat("%i Points!", player->score), hud->menuPos.x + CELL_SIZE*3, hud->menuPos.y + CELL_SIZE*2, 40, WHITE);
-    DrawText(TextFormat("You should gloat to your friends"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE*4, 20, WHITE);
-};
-void CheckAlive(struct Time* time, struct HUD* hud) {
-    if (time->timeLeft <= 0) {
-        hud->alive = false;
-    }
-}
 
 // Maze Functions
 void SetOrigin(struct Maze* maze, int x, int y, struct Node* node) {
@@ -331,12 +284,7 @@ void DrawMap(struct Maze* maze) {
         }
     }
 }
-void SwitchOnCommand(struct Maze* maze, struct Player* player) {
-    if (IsKeyPressed(KEY_SPACE)) {
-        SwitchMap(maze);
-        AddScore(player);
-    }
-}
+
 void PrepNextMap(struct Maze* maze) {
     if (maze->iterations<CELL_COUNT*CELL_COUNT*CELL_COUNT) {
         Shift(maze);
@@ -345,6 +293,67 @@ void PrepNextMap(struct Maze* maze) {
     }
     else {
         maze->isGenerating = false;
+    }
+}
+
+
+//HUD functions
+void InitScore(struct HUD* hud) {
+    hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
+    hud->scorePos.y = CELL_SIZE/4;
+    hud->scoreSize = CELL_SIZE;
+    hud->scoreBackgndPos.y = CELL_SIZE/4 - 5;
+    hud->menuPos.x = CELL_COUNT*CELL_SIZE/6;
+    hud->menuPos.y = CELL_COUNT*CELL_SIZE/4;
+}
+void AddScore(struct Player* player) {
+    player->score += 100;
+}
+void CalcScorePos(struct Player* player, struct HUD* hud) {
+// calculating position of text
+    if (player->score < 100) {
+        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 5;
+        hud->scoreLength = CELL_SIZE * 4.5;
+    }
+    else if (player->score >= 100 && player->score < 1000) {
+        hud->scorePos.x = CELL_COUNT*CELL_SIZE - CELL_SIZE * 6;
+        hud->scoreLength = CELL_SIZE * 5.8;
+    }
+    else if (player->score >= 1000 && player->score < 10000) {
+        hud->scoreLength = CELL_SIZE * 6;
+    }
+
+    // calculating position of background rectangle
+    hud->scoreBackgndPos.x = hud->scorePos.x - CELL_SIZE / 6;
+    hud->scoreBackgndPos.y = hud->scorePos.y - CELL_SIZE / 6;
+}
+void DrawScore(struct Player* player, struct HUD* hud) {
+    DrawRectangle(hud->scoreBackgndPos.x, 10, hud->scoreLength, hud->scoreSize, blue);
+    DrawText (TextFormat("Score: %i", player->score), hud->scorePos.x, hud->scorePos.y, hud->scoreSize, green);
+}
+void DrawTime (struct Time* time) {
+    DrawRectangle( time->timerPos.x , time->timerPos.y , time->timerSize.y , time->timerSize.x, red);
+}
+void DrawMenu (struct HUD* hud, struct Player* player) {
+    DrawRectangle(hud->menuPos.x, hud->menuPos.y, CELL_SIZE*10, CELL_SIZE*6, darkGreen);
+    DrawText(TextFormat("You Died! Good try though, you got"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE/2, 20, WHITE);
+    DrawText(TextFormat("%i Points!", player->score), hud->menuPos.x + CELL_SIZE*3, hud->menuPos.y + CELL_SIZE*2, 40, WHITE);
+    DrawText(TextFormat("You should gloat to your friends"), hud->menuPos.x + CELL_SIZE/2, hud->menuPos.y + CELL_SIZE*4, 20, WHITE);
+    DrawText(TextFormat("Press Space to restart"), hud->menuPos.x + CELL_SIZE*3, hud->menuPos.y + CELL_SIZE*5, 15, WHITE);
+};
+void CheckAlive(struct Time* time, struct HUD* hud) {
+    if (time->timeLeft <= 0) {
+        hud->alive = false;
+    }
+}
+void Restart(struct Player* player, struct HUD* hud, struct Time* time) {
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        player->score = 0;
+        player->position.x = 0;
+        player->position.y = 0;
+        hud->alive = true;
+        time->timeLeft = FRAME_RATE;
     }
 }
 void RenderText(struct Player* player, struct Maze* maze, struct HUD* hud, struct Time* time) {
@@ -478,7 +487,6 @@ int main() {
             //event handling
                 //map functions
                     PrepNextMap(&maze);
-                    SwitchOnCommand(&maze, &player);
 
                 //player functions
                     CheckOnOrigin(&maze, &player, &time);
@@ -490,6 +498,7 @@ int main() {
                 //hud functions
                     CalcScorePos(&player, &hud);
                     CheckAlive(&time,&hud);
+
             //drawing updates
                 BeginDrawing();
                     ClearBackground(white);
@@ -504,6 +513,7 @@ int main() {
                 ClearBackground(BLACK);
                 DrawMenu(&hud, &player);
             EndDrawing();
+            Restart(&player, &hud ,&time);
         }
     };
 
