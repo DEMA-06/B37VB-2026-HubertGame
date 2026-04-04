@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-#define CELL_SIZE  40
+#define CELL_SIZE  60
 #define CELL_COUNT 15
 #define FRAME_RATE 1000
 
@@ -374,7 +374,7 @@ void InitPlayer(struct Player* player) {
     player->score        = 0;
 }
 void DrawPlayer(struct Player* player) {
-    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + (CELL_SIZE/2) , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + 20, CELL_SIZE/ 3, green);
+    DrawCircle((CELL_SIZE*(((((int)player->position.x) * 2)  + 1) / 2)) + (CELL_SIZE/2) , (CELL_SIZE*(((((int)player->position.y) * 2)  + 1) / 2)) + (CELL_SIZE/2), CELL_SIZE/ 3, green);
 };
 void CheckWalls(struct Maze* maze, struct Player* player) {
     //check movement right
